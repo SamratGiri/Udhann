@@ -1,0 +1,16 @@
+# Flutter build
+build/
+frontend/build/
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+**/GeneratedPluginRegistrant.*
+.macos/
+windows/
+linux/
