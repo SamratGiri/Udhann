@@ -1,7 +1,23 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
-import 'package:udhann_grok/utils/global_state.dart'; // Import global state
+import 'package:udhann_grok/utils/global_state.dart'; // Import your global state
+
+String getBaseUrl() {
+  if (kIsWeb) {
+    return 'http://localhost:5001'; 
+  } else if (Platform.isAndroid) {
+    return 'http://10.0.2.2:5001'; 
+  } else if (Platform.isIOS) {
+    return 'http://localhost:5001'; 
+  } else {
+    return 'http://localhost:5001'; 
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>(); // Key for form validation
+  bool _isLoading = false; // For loading indicator
 
   @override
   void dispose() {
@@ -20,27 +37,56 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // If the form is valid, display a snackbar. In a real app, you'd send data to your backend.
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final baseUrl = getBaseUrl();
+    final url = Uri.parse('$baseUrl/api/auth/login');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
+      );
+
+      setState(() => _isLoading = false);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+
+        if (token != null && token.isNotEmpty) {
+          // Store email or token in your global state if needed
+          userManager.setUserEmail(_emailController.text);
+
+          // Navigate to home after successful login
+          Navigator.pushReplacementNamed(context, '/home');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logged in successfully!')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login failed: token missing')),
+          );
+        }
+      } else {
+        final errorMsg = jsonDecode(response.body)['message'] ?? 'Login failed';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Logging in...'),
-          duration: Duration(seconds: 1),
-        ),
+        SnackBar(content: Text('Error occurred: $e')),
       );
-      print(
-        'Login Email: ${_emailController.text}, Password: ${_passwordController.text}',
-      );
-
-      // Store the logged-in email in the global user manager
-      userManager.setUserEmail(_emailController.text);
-      // In a real app, you might fetch the actual profile completion for this user here
-      // For now, we'll assume it's whatever was last set or default to 0.0 if new login
-      // userManager.updateProfileCompletion(fetchedCompletion); // Example
-
-      // Navigate to home after successful login
-      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
@@ -126,14 +172,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
-                    return null; // No length validation here, assuming backend handles
+                    return null; // No length validation here, backend handles it
                   },
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade700,
                       padding: const EdgeInsets.symmetric(vertical: 18),
@@ -141,16 +187,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Login →',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : const Text(
+                            'Login →',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // Go back to Registration
+                    Navigator.pop(context); // Go back to registration screen
                   },
                   child: Text(
                     "Don't have an account? Register",
