@@ -1,7 +1,23 @@
 // lib/screens/registration_screen.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
-import 'package:udhann_grok/utils/global_state.dart'; // Import global state
+import 'package:udhann_grok/utils/global_state.dart'; 
+
+String getBaseUrl() {
+  if (kIsWeb) {
+    return 'http://localhost:5001'; 
+  } else if (Platform.isAndroid) {
+    return 'http://10.0.2.2:5001'; 
+  } else if (Platform.isIOS) {
+    return 'http://localhost:5001'; 
+  } else {
+    return 'http://localhost:5001'; 
+  }
+}
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -12,6 +28,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>(); // Key for form validation
+  bool _isLoading = false; // For showing loading state
 
   @override
   void dispose() {
@@ -20,25 +37,40 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
-  void _register() {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      // If the form is valid, display a snackbar. In a real app, you'd send data to your backend.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registering...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-      print(
-        'Register Email: ${_emailController.text}, Password: ${_passwordController.text}',
+      setState(() => _isLoading = true);
+
+      final baseUrl = getBaseUrl();
+      final url = Uri.parse('$baseUrl/api/auth/register');
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
       );
 
-      // Store the registered email in the global user manager
-      userManager.setUserEmail(_emailController.text);
-      userManager.updateProfileCompletion(0.0); // Reset completion for new user
+      setState(() => _isLoading = false);
 
-      // Navigate to login after successful registration
-      Navigator.pushNamed(context, '/login');
+      if (response.statusCode == 201) {
+        userManager.setUserEmail(_emailController.text);
+        userManager.updateProfileCompletion(0.0);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registered successfully!')),
+        );
+
+        Navigator.pushNamed(context, '/login');
+      } else {
+        final errorMessage = jsonDecode(response.body)['message'] ??
+            'Registration failed. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 
@@ -134,7 +166,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _register,
+                    onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade700,
                       padding: const EdgeInsets.symmetric(vertical: 18),
@@ -142,10 +174,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Register →',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : const Text(
+                            'Register →',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),

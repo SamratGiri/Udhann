@@ -1,6 +1,7 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import '../state/profile_notifier.dart'; // Import the new notifier
+import '../utils/global_state.dart'; // Import your userManager here
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -8,9 +9,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // We no longer need _selectedIndex here as it's managed by the drawer's navigation logic
-  // int _selectedIndex = 0; // Default to Dashboard
-
   bool _showProfileCompletedAnimation = false;
 
   @override
@@ -27,14 +25,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _checkProfileCompletionStatus() {
-    // Only show animation once when profile becomes 100% complete
-    if (profileNotifier.isProfileComplete.value &&
-        !_showProfileCompletedAnimation) {
-      // Access .value here
+    if (profileNotifier.isProfileComplete.value && !_showProfileCompletedAnimation) {
       setState(() {
         _showProfileCompletedAnimation = true;
       });
     }
+  }
+
+  void _handleLogout(BuildContext context) {
+    // Reset profile and clear user email
+    profileNotifier.resetProfile();
+    userManager.clearUserEmail();
+
+    // Navigate to login page and replace current page
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -42,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Dashboard', // Title of the current screen
+          'Dashboard',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         flexibleSpace: Container(
@@ -51,24 +55,21 @@ class _HomeScreenState extends State<HomeScreen> {
               colors: [
                 const Color(0xFF003087),
                 Colors.blue.shade400,
-              ], // Matching sidebar blue
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
         leading: Builder(
-          // Allows access to Scaffold's context for opening drawer
-          builder:
-              (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed:
-                    () => Scaffold.of(context).openDrawer(), // Open the drawer
-              ),
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
         elevation: 4,
       ),
-      drawer: _buildDrawer(context), // The sidebar as a Drawer
+      drawer: _buildDrawer(context),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -76,9 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome message
                 const Text(
-                  'Welcome, [Username]!', // Placeholder for actual user name
+                  'Welcome, [Username]!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -91,8 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 20),
-
-                // Profile Completion Progress Bar
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -118,8 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             return Column(
                               children: [
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       '${completionPercentage.toStringAsFixed(0)}% Complete',
@@ -129,10 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: Colors.blue.shade700,
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.person,
-                                      color: Colors.blue,
-                                    ),
+                                    const Icon(Icons.person, color: Colors.blue),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
@@ -152,8 +146,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Next Steps Section
                 const Text(
                   'Next Steps',
                   style: TextStyle(
@@ -166,8 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildNextStepItem(
                   stepNumber: 1,
                   title: 'Update Portfolio',
-                  description:
-                      'Add your academic, test, and financial details.',
+                  description: 'Add your academic, test, and financial details.',
                   buttonText: 'Update Portfolio',
                   onButtonPressed: () {
                     Navigator.pushNamed(context, '/portfolio');
@@ -177,8 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildNextStepItem(
                   stepNumber: 2,
                   title: 'View Scholarships',
-                  description:
-                      'Explore available scholarships that match your profile.',
+                  description: 'Explore available scholarships that match your profile.',
                   buttonText: 'View Scholarships',
                   onButtonPressed: () {
                     Navigator.pushNamed(context, '/scholarships');
@@ -188,24 +178,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildNextStepItem(
                   stepNumber: 3,
                   title: 'Find University Matches',
-                  description:
-                      'Discover universities perfectly suited to your aspirations.',
+                  description: 'Discover universities perfectly suited to your aspirations.',
                   buttonText: 'Find Matches',
                   onButtonPressed: () {
                     Navigator.pushNamed(
                       context,
                       '/university_matches',
-                      arguments:
-                          profileNotifier
-                              .completionPercentage
-                              .value, // Pass current completion
+                      arguments: profileNotifier.completionPercentage.value,
                     );
                   },
                 ),
               ],
             ),
           ),
-          // Profile Completed Animation Overlay
           if (_showProfileCompletedAnimation) _buildProfileCompletedOverlay(),
         ],
       ),
@@ -215,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProfileCompletedOverlay() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.5), // Semi-transparent overlay
+        color: Colors.black.withOpacity(0.5),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -337,13 +322,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  )),
               const SizedBox(height: 4),
               Text(description, style: TextStyle(color: Colors.grey.shade700)),
               const SizedBox(height: 8),
@@ -362,7 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    // Current route to highlight the selected item
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
     return Drawer(
@@ -452,20 +434,20 @@ class _HomeScreenState extends State<HomeScreen> {
       selected: isSelected,
       selectedTileColor: Colors.blue.shade900,
       onTap: () {
-        Navigator.pop(context); // Close the drawer
+        Navigator.pop(context);
+
         if (routeName == '/login') {
-          profileNotifier.resetProfile(); // Reset profile on logout
+          _handleLogout(context);
+          return;
         }
+
         if (ModalRoute.of(context)?.settings.name != routeName) {
           Navigator.pushReplacementNamed(
             context,
             routeName,
-            arguments:
-                routeName == '/university_matches'
-                    ? profileNotifier
-                        .completionPercentage
-                        .value // Pass the value
-                    : null,
+            arguments: routeName == '/university_matches'
+                ? profileNotifier.completionPercentage.value
+                : null,
           );
         }
       },
