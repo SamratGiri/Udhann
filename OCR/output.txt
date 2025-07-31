@@ -1,0 +1,20 @@
+Sicilian Defense: 173
+Ruy Lopez: 88
+Queen's Gambit Declined: 83
+English Opening: 79
+Italian Game: 51
+Caro-Kann Defense: 48
+Indian Defense: 45
+King's Indian Attack: 44
+Nimzo-Indian Defense: 42
+King's Indian Defense: 37
+Catalan Opening: 34
+Slav Defense: 31
+Modern Defense: 28
+Queen's Pawn Game: 21
+Queen's Gambit Accepted: 21
+French Defense: 20
+• Pirc Defense: 18
+London Defense: 17
+Four Knights Game: 17
+Queen's Indian Defense: 14
