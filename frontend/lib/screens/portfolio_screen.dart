@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import '../state/profile_notifier.dart'; // Import the new notifier
+import '../services/portfolio_service.dart'; // Import the new service
+import '../state/profile_notifier.dart';
+import '../utils/global_state.dart'; // Import global state for user data
 
 class PortfolioScreen extends StatefulWidget {
   @override
@@ -12,10 +14,10 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedTab = 'Education'; // Tracks the currently active tab
+  String _selectedTab = 'Education';
+  final PortfolioService _portfolioService = PortfolioService(); // Initialize service
 
-  // --- FORM CONTROLLERS DECLARATION ---
-  // Education
+  // Form controllers
   final _degreeController = TextEditingController();
   final _institutionController = TextEditingController();
   final _gpaController = TextEditingController();
@@ -23,24 +25,19 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   final _endDateController = TextEditingController();
   String? _educationDocumentPath;
 
-  // Test Scores
   final _testTypeController = TextEditingController();
   final _scoreController = TextEditingController();
   final _testDateController = TextEditingController();
   String? _testScoresDocumentPath;
 
-  // Financial
   final _budgetController = TextEditingController();
-  String? _financialDocumentPath; // Changed to String?
-  final _yourFieldController = TextEditingController(); // Added 'Your Field'
+  String? _financialDocumentPath;
+  final _yourFieldController = TextEditingController();
 
-  // Interests
   final _interestController = TextEditingController();
 
-  // Preferences
   final _countryController = TextEditingController();
   final _programController = TextEditingController();
-  // --- END FORM CONTROLLERS DECLARATION ---
 
   @override
   void initState() {
@@ -54,14 +51,64 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       }
     });
 
-    // Listen to profileNotifier to rebuild tabs when section completion changes
     profileNotifier.addListener(_onProfileNotifierChanged);
+    _fetchPortfolioData(); // Fetch data on init
   }
 
   void _onProfileNotifierChanged() {
-    setState(() {
-      // Rebuilds the tab bar to update checkmarks
-    });
+    setState(() {});
+  }
+
+  // Fetch portfolio data from backend
+  Future<void> _fetchPortfolioData() async {
+    try {
+      final data = await _portfolioService.fetchPortfolio(
+        userManager.userId,
+        userManager.token,
+      );
+      setState(() {
+        // Populate Education
+        if (data['education'] != null) {
+          _degreeController.text = data['education']['degree'] ?? '';
+          _institutionController.text = data['education']['institution'] ?? '';
+          _gpaController.text = data['education']['gpa'] ?? '';
+          _startDateController.text = data['education']['startDate'] ?? '';
+          _endDateController.text = data['education']['endDate'] ?? '';
+          _educationDocumentPath = data['education']['documentPath'];
+          profileNotifier.setSectionCompletion('Education', _isSectionComplete('Education'));
+        }
+        // Populate Test Scores
+        if (data['testScores'] != null) {
+          _testTypeController.text = data['testScores']['testType'] ?? '';
+          _scoreController.text = data['testScores']['score'] ?? '';
+          _testDateController.text = data['testScores']['testDate'] ?? '';
+          _testScoresDocumentPath = data['testScores']['documentPath'];
+          profileNotifier.setSectionCompletion('Test Scores', _isSectionComplete('Test Scores'));
+        }
+        // Populate Financial
+        if (data['financial'] != null) {
+          _yourFieldController.text = data['financial']['yourField'] ?? '';
+          _budgetController.text = data['financial']['budget'] ?? '';
+          _financialDocumentPath = data['financial']['documentPath'];
+          profileNotifier.setSectionCompletion('Financial', _isSectionComplete('Financial'));
+        }
+        // Populate Interests
+        if (data['interests'] != null) {
+          _interestController.text = data['interests']['interest'] ?? '';
+          profileNotifier.setSectionCompletion('Interests', _isSectionComplete('Interests'));
+        }
+        // Populate Preferences
+        if (data['preferences'] != null) {
+          _countryController.text = data['preferences']['country'] ?? '';
+          _programController.text = data['preferences']['program'] ?? '';
+          profileNotifier.setSectionCompletion('Preferences', _isSectionComplete('Preferences'));
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching portfolio: $e')),
+      );
+    }
   }
 
   String _getTabName(int index) {
@@ -96,10 +143,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _interestController.dispose();
     _countryController.dispose();
     _programController.dispose();
-    _yourFieldController.dispose(); // Dispose 'Your Field' controller
-    profileNotifier.removeListener(
-      _onProfileNotifierChanged,
-    ); // Clean up listener
+    _yourFieldController.dispose();
+    profileNotifier.removeListener(_onProfileNotifierChanged);
     super.dispose();
   }
 
@@ -107,24 +152,35 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
-      setState(() {
-        final filePath = result.files.single.path;
-        if (sectionName == 'Education') {
-          _educationDocumentPath = filePath;
-        } else if (sectionName == 'Test Scores') {
-          _testScoresDocumentPath = filePath;
-        } else if (sectionName == 'Financial') {
-          _financialDocumentPath = filePath; // Assign financial document path
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selected file: ${result.files.single.name}')),
-      );
-      _saveSection(sectionName); // Attempt to save section after file selection
+      final filePath = result.files.single.path!;
+      try {
+        final fileUrl = await _portfolioService.uploadDocument(
+          filePath,
+          sectionName,
+          userManager.token,
+        );
+        setState(() {
+          if (sectionName == 'Education') {
+            _educationDocumentPath = fileUrl;
+          } else if (sectionName == 'Test Scores') {
+            _testScoresDocumentPath = fileUrl;
+          } else if (sectionName == 'Financial') {
+            _financialDocumentPath = fileUrl;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File uploaded successfully')),
+        );
+        _saveSection(sectionName); // Save section after file upload
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading file: $e')),
+        );
+      }
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('File selection cancelled')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File selection cancelled')),
+      );
     }
   }
 
@@ -151,16 +207,13 @@ class _PortfolioScreenState extends State<PortfolioScreen>
             _gpaController.text.isNotEmpty &&
             _startDateController.text.isNotEmpty &&
             _endDateController.text.isNotEmpty;
-      // Removed _educationDocumentPath != null;
       case 'Test Scores':
         return _testTypeController.text.isNotEmpty &&
             _scoreController.text.isNotEmpty &&
             _testDateController.text.isNotEmpty;
-      // Removed _testScoresDocumentPath != null;
       case 'Financial':
         return _budgetController.text.isNotEmpty &&
             _yourFieldController.text.isNotEmpty;
-      // Removed _financialDocumentPath != null;
       case 'Interests':
         return _interestController.text.isNotEmpty;
       case 'Preferences':
@@ -171,23 +224,64 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     }
   }
 
-  void _saveSection(String sectionName) {
+  Future<void> _saveSection(String sectionName) async {
     if (_isSectionComplete(sectionName)) {
-      profileNotifier.setSectionCompletion(sectionName, true);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$sectionName data saved!')));
+      try {
+        switch (sectionName) {
+          case 'Education':
+            await _portfolioService.saveEducation({
+              'degree': _degreeController.text,
+              'institution': _institutionController.text,
+              'gpa': _gpaController.text,
+              'startDate': _startDateController.text,
+              'endDate': _endDateController.text,
+              'documentPath': _educationDocumentPath,
+            }, userManager.token);
+            break;
+          case 'Test Scores':
+            await _portfolioService.saveTestScores({
+              'testType': _testTypeController.text,
+              'score': _scoreController.text,
+              'testDate': _testDateController.text,
+              'documentPath': _testScoresDocumentPath,
+            }, userManager.token);
+            break;
+          case 'Financial':
+            await _portfolioService.saveFinancial({
+              'yourField': _yourFieldController.text,
+              'budget': _budgetController.text,
+              'documentPath': _financialDocumentPath,
+            }, userManager.token);
+            break;
+          case 'Interests':
+            await _portfolioService.saveInterests({
+              'interest': _interestController.text,
+            }, userManager.token);
+            break;
+          case 'Preferences':
+            await _portfolioService.savePreferences({
+              'country': _countryController.text,
+              'program': _programController.text,
+            }, userManager.token);
+            break;
+        }
+        profileNotifier.setSectionCompletion(sectionName, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$sectionName data saved!')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving $sectionName: $e')),
+        );
+      }
     } else {
       profileNotifier.setSectionCompletion(sectionName, false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Please fill all required fields for $sectionName.', // Modified message
-          ),
+          content: Text('Please fill all required fields for $sectionName.'),
         ),
       );
     }
-    // No need for setState() here, as profileNotifier.addListener handles rebuilds
   }
 
   Widget _buildUploadDocumentCard({
@@ -354,21 +448,16 @@ class _PortfolioScreenState extends State<PortfolioScreen>
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(
-            100.0,
-          ), // Increased height for completion bar and tabs
+          preferredSize: const Size.fromHeight(100.0),
           child: Column(
             children: [
-              // Profile Completion Indicator
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
                   vertical: 8.0,
                 ),
                 child: ValueListenableBuilder<double>(
-                  valueListenable:
-                      profileNotifier
-                          .completionPercentage, // Use ValueListenable directly
+                  valueListenable: profileNotifier.completionPercentage,
                   builder: (context, completionPercentage, child) {
                     return Column(
                       children: [
@@ -405,11 +494,11 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                   },
                 ),
               ),
-              const SizedBox(height: 10), // Spacing between completion and tabs
+              const SizedBox(height: 10),
               TabBar(
                 controller: _tabController,
                 isScrollable: true,
-                indicatorColor: Colors.transparent, // Hide default indicator
+                indicatorColor: Colors.transparent,
                 labelColor: Colors.blue.shade900,
                 unselectedLabelColor: Colors.white,
                 onTap: (index) {
@@ -452,7 +541,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                // Education Tab
                 _buildPortfolioSection(
                   tabName: 'Education',
                   fields: [
@@ -466,14 +554,12 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     _buildDateField('Start Date', _startDateController),
                     _buildDateField('End Date', _endDateController),
                   ],
-                  uploadTitle:
-                      'Upload Education Transcript (Optional)', // Changed title
+                  uploadTitle: 'Upload Education Transcript (Optional)',
                   uploadSubtitle:
                       'Please upload your official academic transcript or diploma.',
                   uploadedFilePath: _educationDocumentPath,
                   onUploadPressed: () => _selectFile('Education'),
                 ),
-                // Test Scores Tab
                 _buildPortfolioSection(
                   tabName: 'Test Scores',
                   fields: [
@@ -488,35 +574,31 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     ),
                     _buildDateField('Test Date', _testDateController),
                   ],
-                  uploadTitle:
-                      'Upload Test Score Report (Optional)', // Changed title
+                  uploadTitle: 'Upload Test Score Report (Optional)',
                   uploadSubtitle:
                       'Please upload your official test score report (e.g., SAT, IELTS, TOEFL).',
                   uploadedFilePath: _testScoresDocumentPath,
                   onUploadPressed: () => _selectFile('Test Scores'),
                 ),
-                // Financial Tab
                 _buildPortfolioSection(
                   tabName: 'Financial',
                   fields: [
                     _buildTextField(
                       'Your Field',
                       _yourFieldController,
-                    ), // Added 'Your Field'
+                    ),
                     _buildTextField(
                       'Annual Budget (USD)',
                       _budgetController,
                       keyboardType: TextInputType.number,
                     ),
                   ],
-                  uploadTitle:
-                      'Upload Bank Statement/Financial Proof (Optional)', // Changed title
+                  uploadTitle: 'Upload Bank Statement/Financial Proof (Optional)',
                   uploadSubtitle:
                       'Please upload documents proving your financial capacity.',
                   uploadedFilePath: _financialDocumentPath,
                   onUploadPressed: () => _selectFile('Financial'),
                 ),
-                // Interests Tab
                 _buildPortfolioSection(
                   tabName: 'Interests',
                   fields: [
@@ -527,7 +609,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     ),
                   ],
                 ),
-                // Preferences Tab
                 _buildPortfolioSection(
                   tabName: 'Preferences',
                   fields: [
@@ -546,12 +627,10 @@ class _PortfolioScreenState extends State<PortfolioScreen>
               ],
             ),
           ),
-          // Conditional "View Matches" button
           ValueListenableBuilder<double>(
             valueListenable: profileNotifier.completionPercentage,
             builder: (context, completionPercentage, child) {
               if (profileNotifier.isProfileComplete.value) {
-                // Use isProfileComplete getter
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: SizedBox(
@@ -561,15 +640,11 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         Navigator.pushNamed(
                           context,
                           '/university_matches',
-                          arguments:
-                              completionPercentage, // Pass completion to matches screen
+                          arguments: completionPercentage,
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Colors
-                                .green
-                                .shade700, // Different color for distinction
+                        backgroundColor: Colors.green.shade700,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -584,7 +659,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                   ),
                 );
               }
-              return const SizedBox.shrink(); // Hide button if not 100% complete
+              return const SizedBox.shrink();
             },
           ),
         ],
@@ -667,7 +742,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
-        readOnly: true, // Make it read-only so user can't type
+        readOnly: true,
         onTap: () => _selectDate(context, controller),
         decoration: InputDecoration(
           labelText: label,
@@ -724,7 +799,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Welcome, User!', // Replace with actual username
+                    'Welcome, ${userManager.email.isNotEmpty ? userManager.email : 'User'}!',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -732,7 +807,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     ),
                   ),
                   Text(
-                    'user@example.com', // Replace with actual user email
+                    userManager.email.isNotEmpty ? userManager.email : 'user@example.com',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
@@ -758,7 +833,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     BuildContext context,
   ) {
     bool isSelected = false;
-    // Determine selected state based on the current route
     final currentRoute = ModalRoute.of(context)?.settings.name;
     if (index == 0 && currentRoute == '/home') isSelected = true;
     if (index == 1 && currentRoute == '/portfolio') isSelected = true;
@@ -771,7 +845,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       selected: isSelected,
       selectedTileColor: Colors.blue.shade900,
       onTap: () {
-        Navigator.pop(context); // Close the drawer
+        Navigator.pop(context);
         if (index == 0) {
           Navigator.pushReplacementNamed(context, '/home');
         } else if (index == 1) {
@@ -782,12 +856,11 @@ class _PortfolioScreenState extends State<PortfolioScreen>
           Navigator.pushReplacementNamed(
             context,
             '/university_matches',
-            arguments:
-                profileNotifier.completionPercentage.value, // Pass the value
+            arguments: profileNotifier.completionPercentage.value,
           );
         } else if (index == 4) {
-          // Handle logout
-          profileNotifier.resetProfile(); // Reset profile on logout
+          profileNotifier.resetProfile();
+          userManager.clearUserData(); // Clear user data on logout
           Navigator.pushReplacementNamed(context, '/login');
         }
       },

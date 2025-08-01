@@ -1,34 +1,47 @@
 // lib/utils/global_state.dart
 import 'package:flutter/material.dart';
 
-// Represents the current user's data
 class CurrentUser {
   String email;
-  ValueNotifier<double> profileCompletion; // Use ValueNotifier for reactivity
+  String userId; // Add userId
+  String token; // Add token for authentication
+  ValueNotifier<double> profileCompletion;
 
-  CurrentUser({this.email = '', double initialCompletion = 0.0})
-    : profileCompletion = ValueNotifier(initialCompletion);
+  CurrentUser({
+    this.email = '',
+    this.userId = '',
+    this.token = '',
+    double initialCompletion = 0.0,
+  }) : profileCompletion = ValueNotifier(initialCompletion);
 
-  // Method to update profile completion
   void updateProfileCompletion(double newCompletion) {
     profileCompletion.value = newCompletion;
   }
 
-  // Method to set user email
+  void setUserData(String newEmail, String newUserId, String newToken) {
+    email = newEmail;
+    userId = newUserId;
+    token = newToken;
+  }
+
+  void clearUserData() {
+    email = '';
+    userId = '';
+    token = '';
+  }
+
+  // ✅ ADD THESE METHODS:
   void setUserEmail(String newEmail) {
     email = newEmail;
   }
 
-  // Method to clear user email
   void clearUserEmail() {
     email = '';
   }
 }
 
-// Global instance of CurrentUser, accessible throughout the app
 final CurrentUser userManager = CurrentUser();
 
-// Enum to represent different portfolio sections for completion tracking
 enum PortfolioSection {
   education,
   testScores,
@@ -37,7 +50,6 @@ enum PortfolioSection {
   preferences,
 }
 
-// Map to track completion status of each portfolio section
 final Map<PortfolioSection, bool> sectionCompletionStatus = {
   PortfolioSection.education: false,
   PortfolioSection.testScores: false,
@@ -46,7 +58,6 @@ final Map<PortfolioSection, bool> sectionCompletionStatus = {
   PortfolioSection.preferences: false,
 };
 
-// Function to calculate overall profile completion
 void calculateOverallProfileCompletion() {
   int completedSections = 0;
   sectionCompletionStatus.forEach((section, isCompleted) {
@@ -55,7 +66,6 @@ void calculateOverallProfileCompletion() {
     }
   });
 
-  // Assuming 5 sections, each contributes 20%
   double newCompletion = (completedSections / PortfolioSection.values.length);
   userManager.updateProfileCompletion(newCompletion);
 }
