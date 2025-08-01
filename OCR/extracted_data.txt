@@ -1,1 +1,0 @@
-{'education': {'degree': 'ATTON, GRADE-10', 'institution_name': None, 'gpa_percentage': 3.0, 'date_of_completion': None}, 'test_scores': {'test_type': 'IELTS', 'score': None, 'test_date': None}, 'financial': {'field': None, 'budget': None}}
