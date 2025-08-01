@@ -18,6 +18,11 @@ class CurrentUser {
   void setUserEmail(String newEmail) {
     email = newEmail;
   }
+
+  // Method to clear user email
+  void clearUserEmail() {
+    email = '';
+  }
 }
 
 // Global instance of CurrentUser, accessible throughout the app

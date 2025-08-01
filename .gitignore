@@ -1,6 +1,8 @@
 # Flutter build
 build/
 frontend/build/
+OCR/.venv/
+
 
 # Flutter/Dart
 .dart_tool/
