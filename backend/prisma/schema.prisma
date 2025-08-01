@@ -7,57 +7,32 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Student {
-  id            String         @id @default(uuid())
-  firstName     String?
-  lastName      String?
-  email         String?        @unique
-  education     Education[]
-  testScores    TestScore[]
-  financial     Financial[]
-  preferences   Preference?
-  preferenceId  String?        @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  createdAt DateTime   @default(now())
+  portfolio Portfolio?
 }
 
-model Education {
-  id               String   @id @default(uuid())
-  studentId        String
-  degree           String?
-  institutionName  String?
-  gpaPercentage    Float?
-  dateOfCompletion DateTime?
-  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+model Portfolio {
+  id                 Int       @id @default(autoincrement())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  userId             Int       @unique
+  user               User      @relation(fields: [userId], references: [id])
+  degree             String?
+  institution        String?
+  gpa                String?
+  educationStartDate DateTime?
+  educationEndDate   DateTime?
+  testType           String?
+  testScore          String?
+  testDate           DateTime?
+  annualBudget       Float?
+  financialField     String?
+  interests          String?
+  preferredCountries String?
+  preferredPrograms  String?
 
-  @@index([studentId])
-}
-
-model TestScore {
-  id        String   @id @default(uuid())
-  studentId String
-  testType  String?  // e.g., IELTS, PTE, TOEFL
-  score     Float?   // e.g., 7.0, 80
-  testDate  DateTime?
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@index([studentId])
-}
-
-model Financial {
-  id      String  @id @default(uuid())
-  studentId String
-  field   String? // e.g., Engineering
-  budget  Float?  // e.g., 15000.0
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@index([studentId])
-}
-
-model Preference {
-  id          String   @id @default(uuid())
-  studentId   String   @unique
-  interests   String?  // e.g., Computer Science
-  preferences String?  // e.g., Location, Scholarship
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
