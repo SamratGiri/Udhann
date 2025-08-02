@@ -1,7 +1,7 @@
 
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 
@@ -10,7 +10,7 @@ class PortfolioService {
     if (kIsWeb) {
       return 'http://localhost:5001/api';
     } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5000/api';
+      return 'http://10.0.2.2:5001/api';
     } else if (Platform.isIOS) {
       return 'http://localhost:5001/api';
     } else {
@@ -64,22 +64,98 @@ class PortfolioService {
     }
   }
 
-  // Placeholder for file upload (backend support needed)
+  // Upload document with OCR processing support
   Future<String> uploadDocument(String filePath, String sectionName, String token) async {
-    final dio = Dio();
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: filePath.split('/').last),
-      'section': sectionName,
-    });
+    if (token.isEmpty) {
+      throw Exception('No authentication token available');
+    }
+
     try {
-      final response = await dio.post(
-        '${getBaseUrl()}/upload',
-        data: formData,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      // Read file as bytes
+      final file = File(filePath);
+      final bytes = await file.readAsBytes();
+      final fileName = filePath.split('/').last;
+      
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${getBaseUrl()}/portfolio/upload'),
       );
-      return response.data['fileUrl'];
+      
+      // Add headers
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+      
+      // Add file and section to request
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'document',
+          bytes,
+          filename: fileName,
+        ),
+      );
+      request.fields['section'] = sectionName;
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return responseData['fileUrl'] ?? filePath;
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception('Upload failed: ${errorData['message'] ?? response.reasonPhrase}');
+      }
     } catch (e) {
-      throw Exception('File upload not supported by backend: $e');
+      print('Document upload error: $e');
+      throw Exception('Failed to upload document: $e');
+    }
+  }
+
+  // Upload document from bytes (for web platform)
+  Future<String> uploadDocumentFromBytes(Uint8List bytes, String fileName, String sectionName, String token) async {
+    if (token.isEmpty) {
+      throw Exception('No authentication token available');
+    }
+
+    try {
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${getBaseUrl()}/portfolio/upload'),
+      );
+      
+      // Add headers
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+      
+      // Add file and section to request
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'document',
+          bytes,
+          filename: fileName,
+        ),
+      );
+      request.fields['section'] = sectionName;
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return responseData['fileUrl'] ?? fileName;
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception('Upload failed: ${errorData['message'] ?? response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Document upload error: $e');
+      throw Exception('Failed to upload document: $e');
     }
   }
 

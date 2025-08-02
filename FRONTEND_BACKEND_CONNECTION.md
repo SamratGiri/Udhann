@@ -48,10 +48,10 @@ The frontend connects to these backend endpoints:
 - `PUT /api/portfolio` - Save/update portfolio data
 
 ## Configuration
-- **Backend Port**: 5000
+- **Backend Port**: 5001
 - **Frontend API Base URLs**:
   - Web: `http://localhost:5001/api`
-  - Android Emulator: `http://10.0.2.2:5000/api`
+  - Android Emulator: `http://10.0.2.2:5001/api`
   - iOS Simulator: `http://localhost:5001/api`
 
 ## Authentication Flow

@@ -107,3 +107,36 @@ export const getPortfolio = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ message: 'Failed to fetch portfolio', error: (error as Error).message });
   }
 };
+
+export const uploadDocument = async (req: Request, res: Response): Promise<void> => {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ message: 'User not authenticated.' });
+    return;
+  }
+
+  if (!req.file) {
+    res.status(400).json({ message: 'No file uploaded' });
+    return;
+  }
+
+  try {
+    const { section } = req.body;
+    const file = req.file;
+    
+    // Create a file URL (in production, this would be a proper URL)
+    const fileUrl = `/uploads/${file.filename}`;
+    
+    // Optionally store file info in database
+    // You could create a Documents table to track uploaded files
+    
+    res.status(200).json({ 
+      message: 'File uploaded successfully',
+      fileUrl: fileUrl,
+      fileName: file.originalname,
+      section: section
+    });
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    res.status(500).json({ message: 'Failed to upload document', error: (error as Error).message });
+  }
+};

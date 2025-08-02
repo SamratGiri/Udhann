@@ -32,7 +32,7 @@
 
 ### Frontend (`/frontend/lib/`):
 1. **`services/portfolio_service.dart`**: 
-   - Fixed API base URL (port 5000)
+   - Fixed API base URL (port 5001)
    - Added proper error handling and logging
    - Updated data field mapping
 2. **`screens/portfolio_screen.dart`**: 

@@ -1,0 +1,81 @@
+2025-08-02 11:05:41,144 - INFO - Preprocessed image saved to: processed_Marksheet.jpg
+2025-08-02 11:05:41,144 - INFO - Sending Marksheet.jpg to OCR.Space (Attempt 1)
+2025-08-02 11:05:41,925 - INFO - Preprocessed image saved to: processed_bankstatement.png
+2025-08-02 11:05:41,925 - INFO - Sending bankstatement.png to OCR.Space (Attempt 1)
+2025-08-02 11:05:42,031 - INFO - Preprocessed image saved to: processed_ielts_sample.png
+2025-08-02 11:05:42,031 - INFO - Sending ielts_sample.png to OCR.Space (Attempt 1)
+2025-08-02 11:05:44,585 - INFO - Raw OCR Text for bankstatement.png:
+NABIL BẠNK
+00 E: 3729, Berg As, endier
+Enal his tor.com
+ald:
+14222191
+rai34276905•
+"June 1, 2016)
+AUSTRALIAN HIGH COMMISSION
+NEW DELHI
+INDIAI
+Re: Certificate:
+nt Balance
+We hereby certiry that Account...
+2025-08-02 11:05:44,587 - INFO - Matched education.degree: nt Balance
+2025-08-02 11:05:44,591 - INFO - Matched financial.annualBudget: 4,500,000.00
+2025-08-02 11:05:44,989 - INFO - Raw OCR Text for ielts_sample.png:
+IELTS®™
+Test Report Form
+ACADEMIC
+Centre Number
+IN855
+Candidate Details
+Family Name
+-
+First Name
+BARATH MURUGIAH
+Candidate ID
+A52417401
+Date of Birth
+13/02/1999
+Country or Region
+of Origin
+Country of
+...
+2025-08-02 11:05:44,990 - INFO - Matched education.degree: C1
+2025-08-02 11:05:44,991 - INFO - Matched education.gpa: Centre
+2025-08-02 11:05:44,992 - INFO - Matched financial.statementDate: 03/05/2023
+2025-08-02 11:05:45,116 - INFO - Raw OCR Text for Marksheet.jpg:
+National Examination Board
+Name MADHUSUDAN BHANDARI
+Symbol 27200800 Registration No 78772007029j
+schao! Name: RADIANT SECONDARY SCHOOL: MAHENDRANAGAR/KANCHANPURY
+GRADESSHEET
+CODE
+SUBJECT
+D021
+Cöm.Nepa...
+2025-08-02 11:05:45,117 - INFO - Matched education.degree: SSHEET
+2025-08-02 11:05:45,118 - INFO - Matched education.institution: Name MADHUSUDAN BHANDARI
+2025-08-02 11:05:45,118 - INFO - Matched education.gpa: SSHEET
+2025-08-02 11:20:07,463 - INFO - Preprocessed image saved to: processed_ielts_sample.png
+2025-08-02 11:20:07,463 - INFO - Sending ielts_sample.png to OCR.Space (Attempt 1)
+2025-08-02 11:20:09,912 - INFO - Raw OCR Text for ielts_sample.png:
+IELTS®™
+Test Report Form
+ACADEMIC
+Centre Number
+IN855
+Candidate Details
+Family Name
+-
+First Name
+BARATH MURUGIAH
+Candidate ID
+A52417401
+Date of Birth
+13/02/1999
+Country or Region
+of Origin
+Country of
+...
+2025-08-02 11:20:09,915 - INFO - Matched education.degree: C1
+2025-08-02 11:20:09,917 - INFO - Matched education.gpa: Centre
+2025-08-02 11:20:09,919 - INFO - Matched financial.statementDate: 03/05/2023

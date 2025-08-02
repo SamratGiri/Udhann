@@ -89,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Welcome, [Username]!',
+                Text(
+ 'Welcome, ${userManager.email}!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

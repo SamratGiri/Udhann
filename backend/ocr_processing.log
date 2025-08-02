@@ -1,0 +1,78 @@
+2025-08-02 11:06:21,810 - ERROR - File not found: ielts_sample.png
+2025-08-02 11:06:21,811 - ERROR - File not found: Marksheet.jpg
+2025-08-02 11:06:21,811 - ERROR - File not found: bankstatement.png
+2025-08-02 11:17:21,285 - ERROR - File not found: ielts_sample.png
+2025-08-02 11:17:21,285 - ERROR - File not found: Marksheet.jpg
+2025-08-02 11:17:21,285 - ERROR - File not found: bankstatement.png
+2025-08-02 11:17:40,657 - ERROR - File not found: ielts_sample.png
+2025-08-02 11:17:40,657 - ERROR - File not found: Marksheet.jpg
+2025-08-02 11:17:40,657 - ERROR - File not found: bankstatement.png
+2025-08-02 11:17:50,496 - ERROR - File not found: ielts_sample.png
+2025-08-02 11:17:50,496 - ERROR - File not found: Marksheet.jpg
+2025-08-02 11:17:50,496 - ERROR - File not found: bankstatement.png
+2025-08-02 11:20:59,584 - INFO - Preprocessed image saved to: processed_document-1754112959012-470765351.png
+2025-08-02 11:20:59,584 - INFO - Sending /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754112959012-470765351.png to OCR.Space (Attempt 1)
+2025-08-02 11:21:02,034 - INFO - Raw OCR Text for /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754112959012-470765351.png:
+IELTS®™
+Test Report Form
+ACADEMIC
+Centre Number
+IN855
+Candidate Details
+Family Name
+-
+First Name
+BARATH MURUGIAH
+Candidate ID
+A52417401
+Date of Birth
+13/02/1999
+Country or Region
+of Origin
+Country of
+...
+2025-08-02 11:21:02,038 - INFO - Matched education.degree: C1
+2025-08-02 11:21:02,039 - INFO - Matched education.gpa: Centre
+2025-08-02 11:21:02,041 - INFO - Matched financial.statementDate: 03/05/2023
+2025-08-02 11:22:19,340 - INFO - Preprocessed image saved to: processed_document-1754113038762-422645453.png
+2025-08-02 11:22:19,340 - INFO - Sending /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754113038762-422645453.png to OCR.Space (Attempt 1)
+2025-08-02 11:22:21,803 - INFO - Raw OCR Text for /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754113038762-422645453.png:
+IELTS®™
+Test Report Form
+ACADEMIC
+Centre Number
+IN855
+Candidate Details
+Family Name
+-
+First Name
+BARATH MURUGIAH
+Candidate ID
+A52417401
+Date of Birth
+13/02/1999
+Country or Region
+of Origin
+Country of
+...
+2025-08-02 11:22:21,806 - INFO - Matched education.degree: C1
+2025-08-02 11:22:21,807 - INFO - Matched education.gpa: Centre
+2025-08-02 11:22:21,810 - INFO - Matched financial.statementDate: 03/05/2023
+2025-08-02 11:23:20,336 - INFO - Preprocessed image saved to: processed_document-1754113099750-179427328.png
+2025-08-02 11:23:20,337 - INFO - Sending /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754113099750-179427328.png to OCR.Space (Attempt 1)
+2025-08-02 11:23:23,242 - INFO - Raw OCR Text for /Users/madhukunwar/Desktop/Udhann/backend/uploads/document-1754113099750-179427328.png:
+NABIL BẠNK
+00 E: 3729, Berg As, endier
+Enal his tor.com
+ald:
+14222191
+rai34276905•
+"June 1, 2016)
+AUSTRALIAN HIGH COMMISSION
+NEW DELHI
+INDIAI
+Re: Certificate:
+nt Balance
+We hereby certiry that Account...
+2025-08-02 11:23:23,243 - INFO - Matched education.degree: nt Balance
+2025-08-02 11:23:23,245 - INFO - Matched financial.annualBudget: 4,500,000.00

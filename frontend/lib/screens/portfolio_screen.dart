@@ -1,8 +1,10 @@
 // lib/screens/portfolio_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import '../services/portfolio_service.dart'; // Import the new service
+import '../services/ocr_service.dart'; // Import OCR service
 import '../state/profile_notifier.dart';
 import '../utils/global_state.dart'; // Import global state for user data
 
@@ -16,6 +18,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   late TabController _tabController;
   String _selectedTab = 'Education';
   final PortfolioService _portfolioService = PortfolioService(); // Initialize service
+  final OcrService _ocrService = OcrService(); // Initialize OCR service
 
   // Form controllers
   final _degreeController = TextEditingController();
@@ -167,39 +170,218 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   }
 
   Future<void> _selectFile(String sectionName) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      allowMultiple: false,
+    );
 
     if (result != null) {
-      final filePath = result.files.single.path!;
+      final file = result.files.single;
+      
+      // Show processing dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Processing document with OCR..."),
+              ],
+            ),
+          );
+        },
+      );
+
       try {
-        final fileUrl = await _portfolioService.uploadDocument(
-          filePath,
-          sectionName,
-          userManager.token,
-        );
-        setState(() {
-          if (sectionName == 'Education') {
-            _educationDocumentPath = fileUrl;
-          } else if (sectionName == 'Test Scores') {
-            _testScoresDocumentPath = fileUrl;
-          } else if (sectionName == 'Financial') {
-            _financialDocumentPath = fileUrl;
+        Map<String, dynamic> ocrResult;
+        
+        // Handle file processing based on platform
+        if (kIsWeb) {
+          // On web, use bytes directly
+          if (file.bytes != null) {
+            ocrResult = await _ocrService.processDocumentFromBytes(
+              file.bytes!, 
+              file.name, 
+              userManager.token
+            );
+          } else {
+            throw Exception('Could not read file bytes');
           }
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File uploaded successfully')),
-        );
-        _saveSection(sectionName); // Save section after file upload
+        } else {
+          // On mobile, use file path
+          if (file.path != null) {
+            ocrResult = await _ocrService.processDocument(file.path!, userManager.token);
+          } else {
+            throw Exception('Could not get file path');
+          }
+        }
+        
+        // Close processing dialog
+        Navigator.pop(context);
+        
+        if (ocrResult['success'] == true) {
+          // Extract relevant data from OCR
+          final extractedData = _ocrService.extractPortfolioData(ocrResult);
+          
+          // Auto-fill form fields based on section and extracted data
+          _autoFillFields(sectionName, extractedData);
+          
+          // Show success dialog with extracted data
+          _showOCRResultDialog(sectionName, ocrResult['rawText'], extractedData);
+        } else {
+          _showErrorSnackBar('OCR processing failed: ${ocrResult['message']}');
+        }
+
+        // Upload file to backend (optional)
+        try {
+          String fileUrl;
+          if (kIsWeb && file.bytes != null) {
+            fileUrl = await _portfolioService.uploadDocumentFromBytes(
+              file.bytes!,
+              file.name,
+              sectionName,
+              userManager.token,
+            );
+          } else if (!kIsWeb && file.path != null) {
+            fileUrl = await _portfolioService.uploadDocument(
+              file.path!,
+              sectionName,
+              userManager.token,
+            );
+          } else {
+            throw Exception('Could not process file for upload');
+          }
+          setState(() {
+            if (sectionName == 'Education') {
+              _educationDocumentPath = fileUrl;
+            } else if (sectionName == 'Test Scores') {
+              _testScoresDocumentPath = fileUrl;
+            } else if (sectionName == 'Financial') {
+              _financialDocumentPath = fileUrl;
+            }
+          });
+        } catch (uploadError) {
+          print('File upload failed: $uploadError');
+          // Continue even if file upload fails
+        }
+
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading file: $e')),
-        );
+        // Close processing dialog
+        Navigator.pop(context);
+        _showErrorSnackBar('Error processing document: $e');
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File selection cancelled')),
       );
     }
+  }
+
+  void _autoFillFields(String sectionName, Map<String, String> extractedData) {
+    setState(() {
+      switch (sectionName) {
+        case 'Education':
+          if (extractedData['degree'] != null) {
+            _degreeController.text = extractedData['degree']!;
+          }
+          if (extractedData['institution'] != null) {
+            _institutionController.text = extractedData['institution']!;
+          }
+          if (extractedData['gpa'] != null) {
+            _gpaController.text = extractedData['gpa']!;
+          }
+          break;
+        case 'Test Scores':
+          if (extractedData['testType'] != null) {
+            _testTypeController.text = extractedData['testType']!;
+          }
+          if (extractedData['score'] != null) {
+            _scoreController.text = extractedData['score']!;
+          }
+          break;
+        case 'Financial':
+          if (extractedData['budget'] != null) {
+            _budgetController.text = extractedData['budget']!;
+          }
+          break;
+      }
+    });
+  }
+
+  void _showOCRResultDialog(String sectionName, String rawText, Map<String, String> extractedData) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('OCR Results - $sectionName'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (extractedData.isNotEmpty) ...[
+                  const Text(
+                    'Extracted Data:',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                  const SizedBox(height: 8),
+                  ...extractedData.entries.map((entry) => 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text('${entry.key}: ${entry.value}'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                const Text(
+                  'Raw Text:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    rawText.isNotEmpty ? rawText : 'No text extracted',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            if (extractedData.isNotEmpty)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _saveSection(sectionName);
+                },
+                child: const Text('Save Data'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<void> _selectDate(

@@ -229,11 +229,25 @@ def extract_portfolio_data(file_paths, api_key, language="eng"):
 
 # Example Usage
 if __name__ == "__main__":
-    file_paths = [
-        "ielts_sample.png",
-        "Marksheet.jpg",
-        "bankstatement.png"
-    ]
+    import sys
+    
+    # Check if a file path was provided as command line argument
+    if len(sys.argv) < 2:
+        logging.error("No file path provided. Usage: python ocr.py <file_path>")
+        print("❌ Error: No file path provided")
+        sys.exit(1)
+    
+    # Get the uploaded file path from command line argument
+    uploaded_file_path = sys.argv[1]
+    
+    # Check if file exists
+    if not os.path.exists(uploaded_file_path):
+        logging.error(f"File not found: {uploaded_file_path}")
+        print(f"❌ Error: File not found: {uploaded_file_path}")
+        sys.exit(1)
+    
+    # Process the single uploaded file
+    file_paths = [uploaded_file_path]
     
     # Get API key from environment variable
     api_key = os.getenv('OCR_SPACE_API_KEY', 'K81899431888957')
@@ -244,6 +258,7 @@ if __name__ == "__main__":
     # Output results
     if 'error' in result:
         logging.error(f"❌ Extraction failed: {result['error']}")
+        print(f"❌ Extraction failed: {result['error']}")
     else:
         print("\n✅ Successfully extracted portfolio data:")
         for field, value in result.items():
