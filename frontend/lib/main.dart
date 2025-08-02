@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
@@ -5,9 +6,11 @@ import 'screens/home_screen.dart';
 import 'screens/portfolio_screen.dart';
 import 'screens/scholarship_screen.dart';
 import 'screens/university_matches_screen.dart';
-// import 'package:provider/provider.dart'; // If you decide to use Provider
+import 'utils/global_state.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await userManager.init(); // Initialize userManager to load token
   runApp(MyApp());
 }
 
@@ -19,11 +22,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        fontFamily:
-            'Inter', // Ensure Inter font is correctly added to pubspec.yaml and assets
+        fontFamily: 'Inter',
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      initialRoute: '/register', // Start with registration
+      initialRoute: userManager.token.isNotEmpty ? '/home' : '/register',
       routes: {
         '/register': (context) => RegistrationScreen(),
         '/login': (context) => LoginScreen(),

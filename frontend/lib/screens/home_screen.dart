@@ -16,6 +16,18 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Listen to changes in profile completion
     profileNotifier.addListener(_checkProfileCompletionStatus);
+    _initializeUser(); // Initialize user data
+  }
+
+  // Initialize user data
+  Future<void> _initializeUser() async {
+    await userManager.init(); // Load user data from SharedPreferences
+    if (userManager.token.isEmpty) {
+      // If no token, redirect to login
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/login');
+      });
+    }
   }
 
   @override
@@ -32,10 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _handleLogout(BuildContext context) {
-    // Reset profile and clear user email
+  void _handleLogout(BuildContext context) async {
+    // Reset profile and clear user data
     profileNotifier.resetProfile();
-    userManager.clearUserEmail();
+    await userManager.clearUserData();
 
     // Navigate to login page and replace current page
     Navigator.pushReplacementNamed(context, '/login');
@@ -433,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: Text(title, style: const TextStyle(color: Colors.white)),
       selected: isSelected,
       selectedTileColor: Colors.blue.shade900,
-      onTap: () {
+      onTap: () async {
         Navigator.pop(context);
 
         if (routeName == '/login') {

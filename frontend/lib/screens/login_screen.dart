@@ -1,21 +1,20 @@
-// lib/screens/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-
-import 'package:udhann_grok/utils/global_state.dart'; // Import your global state
+import '../utils/global_state.dart';
 
 String getBaseUrl() {
   if (kIsWeb) {
-    return 'http://localhost:5001'; 
+    return 'http://localhost:5001';
   } else if (Platform.isAndroid) {
-    return 'http://10.0.2.2:5001'; 
+    return 'http://10.0.2.2:5000';
   } else if (Platform.isIOS) {
-    return 'http://localhost:5001'; 
+    return 'http://localhost:5001';
   } else {
-    return 'http://localhost:5001'; 
+    return 'http://localhost:5001';
   }
 }
 
@@ -27,8 +26,14 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>(); // Key for form validation
-  bool _isLoading = false; // For loading indicator
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    userManager.init(); // Load persisted token
+  }
 
   @override
   void dispose() {
@@ -60,14 +65,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['token'];
+        final userId = data['userId']?.toString() ?? ''; // Adjust if backend provides userId
 
         if (token != null && token.isNotEmpty) {
-          // Store email or token in your global state if needed
-          userManager.setUserEmail(_emailController.text);
-
-          // Navigate to home after successful login
+          await userManager.setUserData(_emailController.text, userId, token);
           Navigator.pushReplacementNamed(context, '/home');
-
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Logged in successfully!')),
           );
@@ -97,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
-            key: _formKey, // Assign the form key
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -172,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
-                    return null; // No length validation here, backend handles it
+                    return null;
                   },
                 ),
                 const SizedBox(height: 30),
@@ -189,8 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           )
                         : const Text(
                             'Login →',
@@ -201,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // Go back to registration screen
+                    Navigator.pushReplacementNamed(context, '/register');
                   },
                   child: Text(
                     "Don't have an account? Register",

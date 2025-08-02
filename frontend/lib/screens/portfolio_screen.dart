@@ -52,7 +52,20 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     });
 
     profileNotifier.addListener(_onProfileNotifierChanged);
-    _fetchPortfolioData(); // Fetch data on init
+    _initializeUser(); // Initialize user data first
+  }
+
+  // Initialize user data and then fetch portfolio
+  Future<void> _initializeUser() async {
+    await userManager.init(); // Load user data from SharedPreferences
+    if (userManager.token.isNotEmpty) {
+      _fetchPortfolioData(); // Fetch data after user is initialized
+    } else {
+      // If no token, redirect to login
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/login');
+      });
+    }
   }
 
   void _onProfileNotifierChanged() {
@@ -62,48 +75,53 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   // Fetch portfolio data from backend
   Future<void> _fetchPortfolioData() async {
     try {
-      final data = await _portfolioService.fetchPortfolio(
+      final response = await _portfolioService.fetchPortfolio(
         userManager.userId,
         userManager.token,
       );
-      setState(() {
-        // Populate Education
-        if (data['education'] != null) {
-          _degreeController.text = data['education']['degree'] ?? '';
-          _institutionController.text = data['education']['institution'] ?? '';
-          _gpaController.text = data['education']['gpa'] ?? '';
-          _startDateController.text = data['education']['startDate'] ?? '';
-          _endDateController.text = data['education']['endDate'] ?? '';
-          _educationDocumentPath = data['education']['documentPath'];
+      
+      // Backend returns { portfolio: {...} }
+      final portfolioData = response['portfolio'];
+      
+      if (portfolioData != null) {
+        setState(() {
+          // Populate Education fields
+          _degreeController.text = portfolioData['degree'] ?? '';
+          _institutionController.text = portfolioData['institution'] ?? '';
+          _gpaController.text = portfolioData['gpa'] ?? '';
+          _startDateController.text = portfolioData['educationStartDate'] != null 
+              ? DateTime.parse(portfolioData['educationStartDate']).toString().split(' ')[0]
+              : '';
+          _endDateController.text = portfolioData['educationEndDate'] != null 
+              ? DateTime.parse(portfolioData['educationEndDate']).toString().split(' ')[0]
+              : '';
+          
+          // Populate Test Scores fields
+          _testTypeController.text = portfolioData['testType'] ?? '';
+          _scoreController.text = portfolioData['testScore'] ?? '';
+          _testDateController.text = portfolioData['testDate'] != null 
+              ? DateTime.parse(portfolioData['testDate']).toString().split(' ')[0]
+              : '';
+          
+          // Populate Financial fields
+          _yourFieldController.text = portfolioData['financialField'] ?? '';
+          _budgetController.text = portfolioData['annualBudget']?.toString() ?? '';
+          
+          // Populate Interests fields
+          _interestController.text = portfolioData['interests'] ?? '';
+          
+          // Populate Preferences fields
+          _countryController.text = portfolioData['preferredCountries'] ?? '';
+          _programController.text = portfolioData['preferredPrograms'] ?? '';
+          
+          // Update section completion status
           profileNotifier.setSectionCompletion('Education', _isSectionComplete('Education'));
-        }
-        // Populate Test Scores
-        if (data['testScores'] != null) {
-          _testTypeController.text = data['testScores']['testType'] ?? '';
-          _scoreController.text = data['testScores']['score'] ?? '';
-          _testDateController.text = data['testScores']['testDate'] ?? '';
-          _testScoresDocumentPath = data['testScores']['documentPath'];
           profileNotifier.setSectionCompletion('Test Scores', _isSectionComplete('Test Scores'));
-        }
-        // Populate Financial
-        if (data['financial'] != null) {
-          _yourFieldController.text = data['financial']['yourField'] ?? '';
-          _budgetController.text = data['financial']['budget'] ?? '';
-          _financialDocumentPath = data['financial']['documentPath'];
           profileNotifier.setSectionCompletion('Financial', _isSectionComplete('Financial'));
-        }
-        // Populate Interests
-        if (data['interests'] != null) {
-          _interestController.text = data['interests']['interest'] ?? '';
           profileNotifier.setSectionCompletion('Interests', _isSectionComplete('Interests'));
-        }
-        // Populate Preferences
-        if (data['preferences'] != null) {
-          _countryController.text = data['preferences']['country'] ?? '';
-          _programController.text = data['preferences']['program'] ?? '';
           profileNotifier.setSectionCompletion('Preferences', _isSectionComplete('Preferences'));
-        }
-      });
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching portfolio: $e')),
@@ -844,7 +862,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       title: Text(title, style: TextStyle(color: Colors.white)),
       selected: isSelected,
       selectedTileColor: Colors.blue.shade900,
-      onTap: () {
+      onTap: () async {         
         Navigator.pop(context);
         if (index == 0) {
           Navigator.pushReplacementNamed(context, '/home');
@@ -860,7 +878,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
           );
         } else if (index == 4) {
           profileNotifier.resetProfile();
-          userManager.clearUserData(); // Clear user data on logout
+          await userManager.clearUserData(); // Clear user data on logout
           Navigator.pushReplacementNamed(context, '/login');
         }
       },

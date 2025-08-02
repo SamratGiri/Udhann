@@ -17,14 +17,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
       },
     });
 
-    res.status(201).json({ message: 'User registered successfully' });
+    const token = generateToken(newUser.email, newUser.id);
+    res.status(201).json({ 
+      message: 'User registered successfully',
+      token,
+      userId: newUser.id,
+      email: newUser.email
+    });
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -46,8 +52,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = generateToken(user.email);
-    res.json({ token });
+    const token = generateToken(user.email, user.id);
+    res.json({ 
+      token, 
+      userId: user.id,
+      email: user.email,
+      message: 'Login successful'
+    });
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
